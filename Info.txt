@@ -1,0 +1,174 @@
+Java Collection Framework - это фреймворк, который мы будем изучать. Это фреймворк в котором находятся все наши коллекции.
+Сейчас рассмотрим ArrayList, которые реализован в Java Collection Framework.
+------------------------------------------------------------------------------------------------------------------------
+Разберемся, что вообще такое Java Collection Framework?
+Java collections framework — это набор связанных классов и интерфейсов, реализующих широко используемые
+структуры данных — коллекции. Хоть это и framework, он не имеет явных критических участков кода, и работает как
+библиотека.(java.util.Collection) И в итоге это просто набор классов в которых реализован функционал по хранению объектов.
+------------------------------------------------------------------------------------------------------------------------
+Рассмотрим иерархию Коллекций:
+                            |              (ArrayList)
+                            | <-- List <-- (LinkedList)
+                            |              (Vector) <-- Stack
+                            |
+Iterable <-- Collection <-- | <-- Queue <--| <-- (PriorityQueue)
+                            |              |-- Deque <-- (ArrayDeque)
+                            |
+                            | <-- Set <--| <-- (HashSet)
+                            |            |     (LinkedHashSet)
+                            |            |-- SortedSet <-- (TreeSet)
+                            |
+------------------------------------------------------------------------------------------------------------------------
+Первый класс на рассмотрение это ArrayList - В JCF списки реализуются через интерфейс java.util.List.
+Два конкретных класса имплементируют List. Первый который мы рассмотроим, java.util.ArrayList, который реализует список
+на основе динамического массива.
+Как видно из иерархии класс ArrayList реализует интерфейс List, следовательно, он является List'ом.
+ArrayList сам подстраивается под количество элементов в нем, мы не прописываем вручную количество элементов как в случае
+с массивами.
+!По сути ArrayList в своей реализации использует обычный массив и в случае когда этот массив заполняется он просто
+создает новый массив с новым размером, который больше старого и заполняет этот новый массив информацией из старого.Таким
+образом достигается функционал динамического массива.!
+пособы прохождения по элементам ArrayList'а:
+1. Это циклы
+2. for each
+3. использование лямбда функции
+
+(!) Зачем ссылать на List? Допустим нам надо много удалять а эффективнее всего это делать при помощи LinkedList,следовательно,
+мы можем сделать вот так arrayList = new LinkedList<>()
+Мы можем менять нашу реализацию на ходу, главное мы понимаем, что это List.
+------------------------------------------------------------------------------------------------------------------------
+Загляним в реализацию класса ArrayList и посмотрим как он работает.
+- Он находится в папке java.util
+- Он наследует AbstractList<E> и имплементирует List<E>, RandomAccess, Cloneable, java.io.Serializable
+У него есть поля(константы): private static final int DEFAULT_CAPACITY = 10; //размер внутреннего массива(поумолч)
+- transient Object[] elementData; тот самый внутренний массив, массив объектов класса Object
+- внутренне поле private int size; которое хранит текущий размер нашего ArrayList(не массива)
+- есть несколько конструкторов:
+тот самый конструктор который мы используем при создании нашего ArrayList(без аргументов)
+public ArrayList() {
+        this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA; //внутр массив = массиву с размером поумолч
+    }
+но в аргумент при созлдании мы можем указать количество если мы точно знаем его, пример:
+List<Integer> arrayList = new ArrayList(1000);
+за это отвечает этот конструктор:
+public ArrayList(int initialCapacity) {
+        if (initialCapacity > 0) {
+            this.elementData = new Object[initialCapacity];
+        } else if (initialCapacity == 0) {
+            this.elementData = EMPTY_ELEMENTDATA;
+        } else {
+            throw new IllegalArgumentException("Illegal Capacity: "+
+                                               initialCapacity);
+        }
+    }
+есть конструктор который на вход принимает другую коллекцию:
+public ArrayList(Collection<? extends E> c) {
+        Object[] a = c.toArray();
+        if ((size = a.length) != 0) {
+            if (c.getClass() == ArrayList.class) {
+                elementData = a;
+            } else {
+                elementData = Arrays.copyOf(a, size, Object[].class);
+            }
+        } else {
+            // replace with empty array.
+            elementData = EMPTY_ELEMENTDATA;
+        }
+    }
+Используется когда у нас есть какая то коллекция и мы хотим создать новый ArrayList и создать его на базе той коллекции
+которая есть.
+- метод add()
+public boolean add(E e) {
+        ensureCapacityInternal(size + 1);//убеждаемся что внутренния массив нужного размера чтобы поместить новый элемент
+        elementData[size++] = e;//потом в новый массив помещаем новый элемент
+        return true;//и возвращаем true
+    }
+private static int calculateCapacity(Object[] elementData, int minCapacity) {
+        if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+            return Math.max(DEFAULT_CAPACITY, minCapacity);
+        }
+        return minCapacity;
+    }
+private void ensureCapacityInternal(int minCapacity) {
+        ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+    }
+private void ensureExplicitCapacity(int minCapacity) {
+        modCount++;
+
+        // overflow-conscious code
+        if (minCapacity - elementData.length > 0) //если во внутреннем массиве заканчивается место то мы вызываем метод
+        //grow
+            grow(minCapacity);
+    }
+//и в методе grow мы вычесляем новый размер массива и создаем новый массив с этим новым размером и в этот новый массив
+копируем все элементы из старого массива для этого используем метод Arrays.copyOf(elementData, newCapacity).
+И присваиваем нашему внутреннему полю elementData
+private void grow(int minCapacity) {
+        // overflow-conscious code
+        int oldCapacity = elementData.length;
+        int newCapacity = oldCapacity + (oldCapacity >> 1);
+        if (newCapacity - minCapacity < 0)
+            newCapacity = minCapacity;
+        if (newCapacity - MAX_ARRAY_SIZE > 0)
+            newCapacity = hugeCapacity(minCapacity);
+        // minCapacity is usually close to size, so this is a win:
+        elementData = Arrays.copyOf(elementData, newCapacity);
+    }
+- метод get()
+public E get(int index) {
+            rangeCheck(index);//индекс в рамках нашего List
+            checkForComodification();
+            return ArrayList.this.elementData(offset + index);//возвращаем элемент под нужным индексом
+        }
+- метод size()
+public int size() { //возвращает наше поле которое мы видили в начале
+            checkForComodification();
+            return this.size;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,139 @@
+ArrayList - это список(продвинутый вид коллекций)
+------------------------------------------------------------------------------------------------------------------------
+Зачем нужен ArrayList и почему мы не можем обойтись без него?
+-У массивов есть недостаток - фиксированная длина(пример: int[] array = new int[5];)
+При добавлении элемента с индексом [6] у нас возникает ошибка ArrayIndexOfBoundException.
+И нам приходится писать новый массив:
+int[] newArray = new int[10];//создаем новый массив указываем новый размер
+System.arraycopy(array, 0, newArray, 0, array.length);//копируем при помощи arraycopy()
+newArray[6] = 100; //и добавляем еще один элемент
+-плюс в том что у нас всегда константное время доступа к элементу массива.
+------------------------------------------------------------------------------------------------------------------------
+Для примера создадим список задач:
+- Писать код будем не в главном методе тк у нас есть несколько типов списков, есть ArrayList/LinkedList. И таким
+образом мы можем абстрогировать нашего внешнего пользователя (те токого пользователя или тот класс, который использует
+наш класс или метод от внутренней имплиментации, мы можем заменить в любой момент ArrayList на LinkedList и условно
+для пользователя нашего такого маленького API это будет абсолютно прозрачно).Таким образом мы можем вносить изменения
+в собственном коде только в одном месте.
+------------------------------------------------------------------------------------------------------------------------
+Рассмотрим методы:
+(1) Добавляет элемент в наш List
+(2) Добавляем элемент на определенную позицию
+(3) Вывести все элементы нашего списка на экран
+(4) Поменять задачу берем индекс этой задачи и пишем на ее место новую
+(5) Удаляет задачу из нашего списка(удаление не по индексу)
+(6) Расставляем приоритет задачам
+
+ПРИМЕЧАНИЯ:
+1 - scanner.nextLine(); //для получения строки с консоли
+2 - !!!!!!!!(command + E) - открыть недавно закрытый класс!!!!!!!!
+3 - в программах в коде байткоде используется двоичная логика.
+
+(private)делаем private мы же не хотим показывать наш toDoList внешним пользователям/классам, чтобы никто не мог зависить от
+этой переменной, чтобы мы могли спокойно изменить имплементацию.
+------------------------------------------------------------------------------------------------------------------------
+Рассмотрим все подробнее!
+- в методе addToListPosition() с методом из интерфейса List add(), произойдет ошибка если мы добавим 6-ой элемент в
+5 элементов (0,1,2,3,4) - lang.IndexOutOfBoundException.
+Почему так происходит? Для этого рассмотрим этот метод:
+public void add(int index, E element) {
+        rangeCheckForAdd(index); //проверяет(1)
+
+        ensureCapacityInternal(size + 1);  // Увеличивает modCount!! //опять этот же метод
+        System.arraycopy(elementData, index, elementData, index + 1,
+                         size - index);
+        elementData[index] = element;
+        size++;
+    }
+
+    private void rangeCheckForAdd(int index) { //проверяет(1)
+            if (index > size || index < 0) //если наш индекс > чем размер нашего массива и/или индекс < 0
+                throw new IndexOutOfBoundsException(outOfBoundsMsg(index));//выбрасываем такой exception
+        }
+
+-при создании массива ArrayList он автоматически создается с размерность 10:
+private static final int DEFAULT_CAPACITY = 10;
+
+-Рассмотрим метод add()
+public boolean add(E e) {
+        ensureCapacityInternal(size + 1);  // Увеличивает modCount!! (1)
+        elementData[size++] = e;
+        return true;
+    }
+//Срабатывают два метода
+ private static int calculateCapacity(Object[] elementData, int minCapacity) {
+        if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) { //проверяет(наш массив == пустой)
+            return Math.max(DEFAULT_CAPACITY, minCapacity);//если нет то берем максимальное значение
+        }
+        return minCapacity;
+    }
+
+  private void ensureCapacityInternal(int minCapacity) { //и если верхний метод не срабатывает то срабатывает этот
+        ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+    }
+-  метод grow() увеличивает размер массива
+  private void grow(int minCapacity) {
+        // overflow-conscious code(код с учетом переполнения)
+        int oldCapacity = elementData.length;
+        int newCapacity = oldCapacity + (oldCapacity >> 1);
+        if (newCapacity - minCapacity < 0)
+            newCapacity = minCapacity;
+        if (newCapacity - MAX_ARRAY_SIZE > 0)
+            newCapacity = hugeCapacity(minCapacity);
+        // minCapacity is usually close to size, so this is a win:(minCapacity обычно близок к размеру, так что это победа:)
+        elementData = Arrays.copyOf(elementData, newCapacity);
+    }
+
+- метод set()
+public E set(int index, E element) {
+        rangeCheck(index); //опять проверяет
+
+        E oldValue = elementData(index); //операция присвоения
+        elementData[index] = element; //заменяем элемент в массиве
+        return oldValue;
+    }
+
+- метод remove()
+public boolean remove(Object o) { //просто идем по циклу
+        if (o == null) { //если равен 0
+            for (int index = 0; index < size; index++)
+                if (elementData[index] == null) {
+                    fastRemove(index);
+                    return true;
+                }
+        } else {
+            for (int index = 0; index < size; index++) //если не равен 0
+                if (o.equals(elementData[index])) {//равен ли наш элемент какому то из нашего списка
+                    fastRemove(index);//выполняем удаление если пришли к нужному элементу
+                    return true;
+                }
+        }
+        return false;
+    }
+
+- метод indexOf()
+public int indexOf(Object o) {//если передать не существующий объект то он...
+        if (o == null) {
+            for (int i = 0; i < size; i++)
+                if (elementData[i]==null)
+                    return i;
+        } else {
+            for (int i = 0; i < size; i++)
+                if (o.equals(elementData[i]))
+                    return i;
+        }
+        return -1; //то он вернет -1 (рассмотреть)
+    }
+------------------------------------------------------------------------------------------------------------------------
+Что касаемо методов самого List
+int indexOf(Object o); - Возвращает индекс последнего вхождения указанного элемента в этом списке или -1, если этот
+список не содержит элемент.Более формально, возвращает наивысший индекс i, такой что (o == null? Get (i) == null:
+o.equals (get (i))), или -1,если такого индекса нет.
+Параметры:
+o - элемент для поиска
+Возврат:
+индекс последнего вхождения указанного элемента в этом списке или -1, если этот список не содержит элемент
+Выбрасомовые исключения:
+ClassCastException - если тип указанного элемента несовместим с этим списком (необязательно)
+NullPointerException - если указанный элемент является нулевым и этот список не допускает нулевые элементы (необязательно)
+
